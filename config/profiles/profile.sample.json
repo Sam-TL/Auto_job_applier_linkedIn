@@ -15,7 +15,8 @@
     "ethnicity": "Decline",
     "gender": "Decline",
     "disability_status": "Decline",
-    "veteran_status": "Decline"
+    "veteran_status": "Decline",
+    "email": "samuelaathomas@gmail.com"
   },
   "questions": {
     "default_resume_path": "resume_formats/sample.pdf",
@@ -50,14 +51,63 @@
     "School": "UEL",
     "Degree": "MSc.",
     "skill_keywords": {
-      "cloud": ["Cloud", "Cloud Computing"],
-      "azure": ["Azure"],
-      "aws": ["AWS"],
-      "ibm": ["ibm", "ibm Cloud"],
-      "oracle": ["oracle", "Oracle Cloud"],
-      "pharmaceutical manufacturing": ["Pharmaceutical Manufacturing"],
-      "python": ["Python"],
-      "c#": ["C#"]
+      "cloud": [
+        "Cloud",
+        "Cloud Computing"
+      ],
+      "azure": [
+        "Azure"
+      ],
+      "aws": [
+        "AWS"
+      ],
+      "ibm": [
+        "ibm",
+        "ibm Cloud"
+      ],
+      "oracle": [
+        "oracle",
+        "Oracle Cloud"
+      ],
+      "pharmaceutical manufacturing": [
+        "Pharmaceutical Manufacturing"
+      ],
+      "python": [
+        "Python"
+      ],
+      "c#": [
+        "C#"
+      ],
+      "microsoft dynamics": [
+        "Microsoft Dynamics",
+        "Dynamics 365"
+      ],
+      "togaf": [
+        "TOGAF"
+      ],
+      "gcp": [
+        "Google Cloud Platform",
+        "GCP"
+      ],
+      "terraform": [
+        "Terraform"
+      ],
+      "kubernetes": [
+        "Kubernetes"
+      ],
+      "prometheus": [
+        "Prometheus"
+      ],
+      "grafana": [
+        "Grafana"
+      ],
+      "snowflake": [
+        "Snowflake"
+      ],
+      "programming": [
+        "Programming",
+        "Programming Language experience"
+      ]
     },
     "fallbacks": {
       "cloud": "10",
@@ -67,7 +117,17 @@
       "pharmaceutical manufacturing": "1",
       "python": "12",
       "c#": "12",
-      "design": "10"
+      "design": "10",
+      "microsoft dynamics": "15",
+      "togaf": "8",
+      "gcp": "6",
+      "terraform": "8",
+      "kubernetes": "6",
+      "prometheus": "5",
+      "grafana": "5",
+      "snowflake": "4",
+      "programming": "12",
+      "advertising design": "10"
     },
     "highlights": [
       "Auto-generated highlights will be appended to user_information_all when resume text is provided."
@@ -86,11 +146,18 @@
       "weekends": "Yes",
       "overtime": "Yes",
       "nights": "Yes",
-      "salary expectation": "80000"
+      "salary expectation": "80000",
+      "pharmaceutical manufacturing": "1",
+      "microsoft azure": "12",
+      "icelandic": "Professional",
+      "korean": "None"
     },
     "textarea_keyword_answers": {
       "visa status": "Authorized to work without sponsorship.",
-      "suitable for this role": "I bring relevant expertise and a track record of delivering results in similar roles."
+      "suitable for this role": "I bring relevant expertise and a track record of delivering results in similar roles.",
+      "current visa status": "Not required – I am legally authorized to work in Ireland.",
+      "experience in saas": "Yes, I have led multiple SaaS platform initiatives covering architecture, delivery, and operations.",
+      "experience working within a saas company": "Yes, I have managed teams delivering SaaS products and cloud-native services."
     }
   }
 }
