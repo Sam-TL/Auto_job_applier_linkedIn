@@ -17,3 +17,4 @@ venv/
 config/profiles/*.json
 !config/profiles/profile.sample.json
 venv_win/
+resume_formats/
