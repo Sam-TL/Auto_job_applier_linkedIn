@@ -220,6 +220,16 @@ def validate_settings() -> None | ValueError | TypeError:
     check_boolean(alternate_sortby, "alternate_sortby")
     check_boolean(cycle_date_posted, "cycle_date_posted")
     check_boolean(stop_date_cycle_at_24hr, "stop_date_cycle_at_24hr")
+    check_int(application_budget_per_run, "application_budget_per_run", 0)
+    check_boolean(confirm_after_budget, "confirm_after_budget")
+    check_boolean(stagger_applications, "stagger_applications")
+    check_int(stagger_min_delay, "stagger_min_delay", 0)
+    check_int(stagger_max_delay, "stagger_max_delay", 0)
+    if stagger_max_delay < stagger_min_delay:
+        raise ValueError(
+            f'"stagger_max_delay" in "{__validation_file_path}" must be greater than or equal to '
+            f'"stagger_min_delay". Received min={stagger_min_delay}, max={stagger_max_delay}.'
+        )
     
     # check_string(generated_resume_path, "generated_resume_path", min_length=1)
 

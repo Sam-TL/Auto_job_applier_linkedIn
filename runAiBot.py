@@ -22,8 +22,9 @@ import pyautogui
 # Set CSV field size limit to prevent field size errors
 csv.field_size_limit(1000000)  # Set to 1MB instead of default 131KB
 
-from random import choice, shuffle, randint
+from random import choice, shuffle, randint, uniform
 from datetime import datetime
+from time import sleep
 
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
@@ -76,6 +77,7 @@ external_jobs_count = 0
 failed_count = 0
 skip_count = 0
 dailyEasyApplyLimitReached = False
+applications_since_budget_prompt = 0
 
 re_experience = re.compile(r'[(]?\s*(\d+)\s*[)]?\s*[-to]*\s*\d*[+]*\s*year[s]?', re.IGNORECASE)
 
@@ -352,6 +354,43 @@ def extract_years_of_experience(text: str) -> int:
         print_lg(f'\n{text}\n\nCouldn\'t find experience requirement in About the Job!')
         return 0
     return max([int(match) for match in matches if int(match) <= 12])
+
+
+def handle_application_pacing(application_link: str) -> bool:
+    '''
+    Applies staggered waiting and application budget checks after a submission.
+    Returns False if the run should stop, otherwise True.
+    '''
+    global applications_since_budget_prompt
+    if application_link == "Skipped":
+        return True
+
+    applications_since_budget_prompt += 1
+
+    if stagger_applications and (stagger_min_delay > 0 or stagger_max_delay > 0):
+        low = min(stagger_min_delay, stagger_max_delay)
+        high = max(stagger_min_delay, stagger_max_delay)
+        if high > 0:
+            wait_seconds = uniform(low, high if high > 0 else low)
+            print_lg(f"Staggering next application by {wait_seconds:.1f} seconds.")
+            sleep(wait_seconds)
+
+    if application_budget_per_run > 0 and applications_since_budget_prompt >= application_budget_per_run:
+        if confirm_after_budget:
+            choice = pyautogui.confirm(
+                f"You have completed {applications_since_budget_prompt} application(s) in this cycle.\n"
+                "Do you want to continue applying?",
+                "Application Budget Reached",
+                ["Continue Applying", "Stop Here"]
+            )
+            if choice != "Continue Applying":
+                print_lg("Stopping run after reaching application budget.")
+                return False
+            applications_since_budget_prompt = 0
+        else:
+            print_lg("Application budget per run reached; stopping as per configuration.")
+            return False
+    return True
 
 
 
@@ -1169,8 +1208,9 @@ def apply_to_jobs(search_terms: list[str]) -> None:
     applied_jobs = get_applied_job_ids()
     rejected_jobs = set()
     blacklisted_companies = set()
-    global current_city, failed_count, skip_count, easy_applied_count, external_jobs_count, tabs_count, pause_before_submit, pause_at_failed_question, useNewResume
+    global current_city, failed_count, skip_count, easy_applied_count, external_jobs_count, tabs_count, pause_before_submit, pause_at_failed_question, useNewResume, applications_since_budget_prompt
     current_city = current_city.strip()
+    applications_since_budget_prompt = 0
 
     if randomize_search_order:  shuffle(search_terms)
     for searchTerm in search_terms:
@@ -1387,6 +1427,8 @@ def apply_to_jobs(search_terms: list[str]) -> None:
                     if application_link == "Easy Applied": easy_applied_count += 1
                     else:   external_jobs_count += 1
                     applied_jobs.add(job_id)
+                    if not handle_application_pacing(application_link):
+                        return
 
 
 
