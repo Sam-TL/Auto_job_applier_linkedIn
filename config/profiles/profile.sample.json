@@ -1,0 +1,86 @@
+{
+  "personals": {
+    "first_name": "Jane",
+    "middle_name": "",
+    "last_name": "Doe",
+    "phone_number": "5551234567",
+    "current_city": "Dublin",
+    "street": "",
+    "state": "",
+    "zipcode": "",
+    "country": "Ireland",
+    "phone_country_code": "Ireland (+353)",
+    "preferred_email": "jane.doe@example.com",
+    "preferred_location": "Dublin, Ireland",
+    "ethnicity": "Decline",
+    "gender": "Decline",
+    "disability_status": "Decline",
+    "veteran_status": "Decline"
+  },
+  "questions": {
+    "default_resume_path": "resume_formats/sample.pdf",
+    "years_of_experience": "5",
+    "require_visa": "No",
+    "website": "",
+    "linkedIn": "https://www.linkedin.com/in/example/",
+    "us_citizenship": "Other",
+    "desired_salary": 90000,
+    "current_ctc": 0,
+    "notice_period": 30,
+    "linkedin_headline": "Cloud Architect | Digital Transformation Leader",
+    "linkedin_summary": "Short professional summary goes here.",
+    "cover_letter": "",
+    "user_information_all": "",
+    "recent_employer": "",
+    "confidence_level": "8"
+  },
+  "secrets": {
+    "username": "",
+    "password": "",
+    "use_AI": false,
+    "ai_provider": "openai",
+    "llm_api_url": "",
+    "llm_api_key": "not-needed",
+    "llm_model": "",
+    "llm_spec": "openai",
+    "stream_output": false
+  },
+  "resume_ingestion": {
+    "text_path": "resume_formats/sample_resume.txt",
+    "skill_keywords": {
+      "cloud": ["Cloud", "Cloud Computing"],
+      "azure": ["Azure"],
+      "aws": ["AWS"],
+      "ibm": ["ibm", "ibm Cloud"],
+      "oracle": ["oracle", "Oracle Cloud"],
+      "pharmaceutical manufacturing": ["Pharmaceutical Manufacturing"],
+      "python": ["Python"],
+      "c#": ["C#"]
+    },
+    "fallbacks": {
+      "cloud": "10",
+      "azure": "6",
+      "aws": "5",
+      "tableau": "12",
+      "pharmaceutical manufacturing": "1",
+      "python": "12",
+      "c#": "12",
+      "design": "10"
+    },
+    "highlights": [
+      "Auto-generated highlights will be appended to user_information_all when resume text is provided."
+    ],
+    "question_keyword_answers": {
+      "legally authorized to work": "Yes",
+      "Master of Business Administration": "No",
+      "hybrid setting": "Yes",
+      "english": "Native or bilingual",
+      "language": "None",
+      "salary expectation": "60000"
+    },
+    "textarea_keyword_answers": {
+      "visa status": "Authorized to work without sponsorship.",
+      "suitable for this role": "I bring relevant expertise and a track record of delivering results in similar roles."
+    }
+  }
+}
