@@ -40,11 +40,11 @@ Note: Will be treated as False if `run_in_background = True`
 '''
 
 # Application pacing controls
-application_budget_per_run = 15      # 0 = unlimited; otherwise bot pauses after this many applications
+application_budget_per_run = 20      # 0 = unlimited; otherwise bot pauses after this many applications
 confirm_after_budget = True         # Prompt to continue once budget is reached
 stagger_applications = True        # Introduce a random delay between completed applications
-stagger_min_delay = 5               # Minimum stagger delay in seconds (used when stagger_applications is True)
-stagger_max_delay = 15              # Maximum stagger delay in seconds (used when stagger_applications is True)
+stagger_min_delay = 10               # Minimum stagger delay in seconds (used when stagger_applications is True)
+stagger_max_delay = 25              # Maximum stagger delay in seconds (used when stagger_applications is True)
 alternate_sortby = True             # True or False, Note: True or False are case-sensitive
 cycle_date_posted = True            # True or False, Note: True or False are case-sensitive
 stop_date_cycle_at_24hr = True      # True or False, Note: True or False are case-sensitive
