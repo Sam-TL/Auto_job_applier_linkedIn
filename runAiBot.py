@@ -487,7 +487,17 @@ def _apply_text_placeholders(text: str, job_title: str, company_name: str, curre
     )
 
 
-def answer_questions(modal: WebElement, questions_list: set, work_location: str, job_title: str, company_name: str, current_date: str, job_description: str | None = None ) -> set:
+def answer_questions(
+    modal: WebElement,
+    questions_list: set,
+    work_location: str,
+    job_title: str,
+    company_name: str,
+    current_date: str,
+    job_description: str | None = None,
+    *,
+    phone_country_code_value: str | None = None
+) -> set:
     # Get all questions from the page
      
     all_questions = modal.find_elements(By.XPATH, ".//div[@data-test-form-element]")
@@ -580,7 +590,13 @@ def answer_questions(modal: WebElement, questions_list: set, work_location: str,
             if 'email' in label:
                 desired_override = preferred_email if preferred_email else prev_answer
             elif 'phone country code' in label:
-                desired_override = phone_country_code if phone_country_code else prev_answer
+                desired_override = (
+                    phone_country_code_value
+                    if phone_country_code_value
+                    else phone_country_code
+                    if 'phone_country_code' in globals()
+                    else prev_answer
+                )
             force_overwrite = desired_override is not None
             if overwrite_previous_answers or selected_option == "Select an option" or force_overwrite:
                 keyword_answer = next((value for key, value in question_keyword_answers.items() if key in label), None)
@@ -1368,7 +1384,16 @@ def apply_to_jobs(search_terms: list[str]) -> None:
                                         errored = "stuck"
                                         raise Exception("Seems like stuck in a continuous loop of next, probably because of new questions.")
                                     current_date = datetime.now().strftime("%d %B %Y")
-                                    questions_list = answer_questions(modal, questions_list, work_location, job_title=title, company_name=company, current_date=current_date, job_description=description)
+                                    questions_list = answer_questions(
+                                        modal,
+                                        questions_list,
+                                        work_location,
+                                        job_title=title,
+                                        company_name=company,
+                                        current_date=current_date,
+                                        job_description=description,
+                                        phone_country_code_value=phone_country_code,
+                                    )
                                     if useNewResume and not uploaded: uploaded, resume = upload_resume(modal, default_resume_path)
                                     try: next_button = modal.find_element(By.XPATH, './/span[normalize-space(.)="Review"]') 
                                     except NoSuchElementException:  next_button = modal.find_element(By.XPATH, './/button[contains(span, "Next")]')
