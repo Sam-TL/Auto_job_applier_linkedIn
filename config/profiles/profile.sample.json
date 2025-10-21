@@ -47,6 +47,8 @@
   },
   "resume_ingestion": {
     "text_path": "resume_formats/sample_resume.txt",
+    "School": "UEL",
+    "Degree": "MSc.",
     "skill_keywords": {
       "cloud": ["Cloud", "Cloud Computing"],
       "azure": ["Azure"],
@@ -76,6 +78,14 @@
       "hybrid setting": "Yes",
       "english": "Native or bilingual",
       "language": "None",
+      "willing to relocate": "Yes",
+      "I currently attend this institution": "No",
+      "highest level of education": "Master's Degree",
+      "are you willing to travel": "Yes",
+      "do you have a driver's license": "Yes",
+      "weekends": "Yes",
+      "overtime": "Yes",
+      "nights": "Yes",
       "salary expectation": "60000"
     },
     "textarea_keyword_answers": {

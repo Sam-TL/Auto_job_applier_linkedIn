@@ -26,6 +26,7 @@ from random import choice, shuffle, randint
 from datetime import datetime
 
 from selenium.webdriver.common.by import By
+from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support.select import Select
@@ -456,17 +457,81 @@ def answer_questions(modal: WebElement, questions_list: set, work_location: str,
     # all_single_line_questions = modal.find_elements(By.XPATH, ".//div[@data-test-single-line-text-form-component]")
     # all_questions = all_questions + all_list_questions + all_single_line_questions
 
+    def _extract_label_text(question_block: WebElement, control: WebElement | None = None) -> tuple[str, str]:
+        """
+        Try to determine a human readable label for the given question.
+        Returns the raw label text and a lower-cased variant for matching.
+        """
+        text_candidates: list[str] = []
+
+        def add_candidate(value: str | None) -> None:
+            if not value:
+                return
+            cleaned = " ".join(value.split())
+            if cleaned:
+                text_candidates.append(cleaned)
+
+        try:
+            for header in question_block.find_elements(By.XPATH, ".//legend|.//h1|.//h2|.//h3|.//h4|.//span[contains(@data-test,'title')]|.//span[contains(@class,'fb-dash-form-element__label-title')]"):
+                add_candidate(header.text)
+        except Exception:
+            pass
+
+        try:
+            for label_el in question_block.find_elements(By.TAG_NAME, "label"):
+                try:
+                    target_id = label_el.get_attribute("for") or ""
+                    if target_id:
+                        input_candidates = question_block.find_elements(By.XPATH, f".//*[@id='{target_id}']")
+                        if input_candidates:
+                            input_type = input_candidates[0].get_attribute("type")
+                            if input_type in {"radio", "checkbox"}:
+                                continue
+                except Exception:
+                    pass
+                add_candidate(label_el.text)
+                add_candidate(label_el.get_attribute("aria-label"))
+        except Exception:
+            pass
+
+        if control is not None:
+            try:
+                add_candidate(control.get_attribute("aria-label"))
+                aria_labelledby = control.get_attribute("aria-labelledby") or ""
+                for aria_id in aria_labelledby.split():
+                    if not aria_id:
+                        continue
+                    try:
+                        aria_text = driver.execute_script(
+                            "const el=document.getElementById(arguments[0]);"
+                            "return el ? (el.innerText || el.textContent || '').trim() : '';",
+                            aria_id,
+                        )
+                        add_candidate(aria_text)
+                    except Exception:
+                        continue
+            except StaleElementReferenceException:
+                pass
+
+        if not text_candidates:
+            try:
+                add_candidate((question_block.text or "").split("\n")[0])
+            except Exception:
+                pass
+
+        if not text_candidates:
+            return "Unknown", "unknown"
+
+        label_text = text_candidates[0]
+        return label_text, label_text.lower()
+
     for Question in all_questions:
         # Check if it's a select Question
         select = try_xp(Question, ".//select", False)
         if select:
-            label_org = "Unknown"
-            try:
-                label = Question.find_element(By.TAG_NAME, "label")
-                label_org = label.find_element(By.TAG_NAME, "span").text
-            except: pass
+            label_org, label_lower = _extract_label_text(Question, select)
             answer = 'Yes'
-            label = label_org.lower()
+            label = label_lower
             select = Select(select)
             selected_option = select.first_selected_option.text
             optionsText = [option.text for option in select.options]
@@ -550,12 +615,10 @@ def answer_questions(modal: WebElement, questions_list: set, work_location: str,
         radio = try_xp(Question, './/fieldset[@data-test-form-builder-radio-button-form-component="true"]', False)
         if radio:
             prev_answer = None
-            label = try_xp(radio, './/span[@data-test-form-builder-radio-button-form-component__title]', False)
-            try: label = find_by_class(label, "visually-hidden", 2.0)
-            except: pass
-            label_org = label.text if label else "Unknown"
+            label_org, label = _extract_label_text(radio)
             answer = 'Yes'
-            label = label_org.lower()
+            if label == "unknown":
+                label = label_org.lower()
 
             label_org += ' [ '
             options = radio.find_elements(By.TAG_NAME, 'input')
@@ -612,15 +675,13 @@ def answer_questions(modal: WebElement, questions_list: set, work_location: str,
             continue
         
         # Check if it's a text question
-        text = try_xp(Question, ".//input[@type='text']", False)
+        text = try_xp(Question, ".//input[@type='text' or @type='number' or @type='tel']", False)
         if text: 
             do_actions = False
-            label = try_xp(Question, ".//label[@for]", False)
-            try: label = label.find_element(By.CLASS_NAME,'visually-hidden')
-            except: pass
-            label_org = label.text if label else "Unknown"
+            label_org, label = _extract_label_text(Question, text)
             answer = "" # years_of_experience
-            label = label_org.lower()
+            if label == "unknown":
+                label = label_org.lower()
 
             prev_answer = text.get_attribute("value")
             if not prev_answer or overwrite_previous_answers:
@@ -826,28 +887,40 @@ def follow_company(modal: WebDriver = driver) -> None:
     Function to follow or un-follow easy applied companies based om `follow_companies`
     '''
     try:
-        script = """
+        script = r"""
 const container = arguments[0];
 const desired = arguments[1];
-const checkboxes = Array.from(container.querySelectorAll('input[type="checkbox"]'));
+const sections = Array.from(container.querySelectorAll('.job-details-easy-apply-footer__section'));
+const scopes = sections.length ? sections : [container];
 let processed = 0;
-for (const checkbox of checkboxes) {
-    const label = container.querySelector(`label[for="${checkbox.id}"]`) || checkbox.closest('label');
-    const aria = checkbox.getAttribute('aria-label') || checkbox.getAttribute('aria-labelledby') || '';
-    const labelText = label ? label.textContent : '';
-    const combined = (labelText || aria || '').trim().toLowerCase();
-    if (!combined.startsWith('follow ')) {
-        continue;
+for (const scope of scopes) {
+  const checkboxes = Array.from(scope.querySelectorAll('input[type="checkbox"]'));
+  for (const checkbox of checkboxes) {
+    const label = scope.querySelector(`label[for="${checkbox.id}"]`) || checkbox.closest('label');
+    const spans = label ? Array.from(label.querySelectorAll('span')) : [];
+    const ariaLabel = (checkbox.getAttribute('aria-label') || '').trim();
+    const ariaLabelledBy = (checkbox.getAttribute('aria-labelledby') || '').trim().split(/\s+/).filter(Boolean);
+    const ariaLabelledByText = ariaLabelledBy.map(id => {
+      const node = document.getElementById(id);
+      return node ? node.textContent : '';
+    }).join(' ');
+    const labelText = label ? (label.textContent || '') : '';
+    const spanText = spans.map(span => span.textContent || '').join(' ');
+    const combined = [labelText, spanText, ariaLabel, ariaLabelledByText].join(' ').replace(/\s+/g, ' ').trim().toLowerCase();
+    if (!combined || !(combined === 'follow' || combined.startsWith('follow '))) {
+      continue;
     }
     processed += 1;
     checkbox.scrollIntoView({block: 'center'});
     if (checkbox.checked !== desired) {
-        checkbox.click();
-        if (checkbox.checked !== desired) {
-            checkbox.checked = desired;
-            checkbox.dispatchEvent(new Event('change', {bubbles: true}));
-        }
+      checkbox.click();
+      if (checkbox.checked !== desired) {
+        checkbox.checked = desired;
+        checkbox.dispatchEvent(new Event('input', {bubbles: true}));
+        checkbox.dispatchEvent(new Event('change', {bubbles: true}));
+      }
     }
+  }
 }
 return processed;
 """
@@ -855,58 +928,114 @@ return processed;
         if processed:
             return
 
-        def _collect_follow_checkboxes() -> list[WebElement]:
-            boxes = modal.find_elements(By.XPATH, ".//input[@type='checkbox' and (contains(@id,'follow') or starts-with(translate(@aria-label,'FOLLOW','follow'),'follow'))]")
-            labels = modal.find_elements(By.XPATH, ".//label[starts-with(normalize-space(.), 'Follow ')]")
-            seen = set()
-            for label in labels:
-                checkbox = None
-                label_for = label.get_attribute("for")
-                if label_for:
-                    checkbox = try_xp(modal, f".//input[@id=\"{label_for}\"]", False)
-                if not checkbox:
-                    checkbox = try_xp(label, ".//input[@type='checkbox']", False)
-                if checkbox:
-                    boxes.append(checkbox)
-            unique_boxes = []
-            for box in boxes:
-                if not box:
-                    continue
+        def _extract_label(modal_scope: WebElement, checkbox: WebElement) -> WebElement | None:
+            checkbox_id = checkbox.get_attribute("id")
+            label = None
+            if checkbox_id:
+                label = try_xp(modal_scope, f".//label[@for='{checkbox_id}']", False)
+            if not label:
                 try:
-                    identifier = box.id
-                except StaleElementReferenceException:
-                    continue
-                if identifier in seen:
-                    continue
-                seen.add(identifier)
-                unique_boxes.append(box)
-            return unique_boxes
+                    label = checkbox.find_element(By.XPATH, "ancestor::label[1]")
+                except NoSuchElementException:
+                    label = None
+            return label
+
+        def _collect_follow_checkboxes() -> list[WebElement]:
+            try:
+                footer_sections = modal.find_elements(By.CSS_SELECTOR, ".job-details-easy-apply-footer__section")
+            except Exception:
+                footer_sections = []
+            search_roots = footer_sections if footer_sections else [modal]
+            results: list[WebElement] = []
+            seen_ids: set[str] = set()
+
+            for root in search_roots:
+                try:
+                    candidates = root.find_elements(By.XPATH, ".//input[@type='checkbox']")
+                except Exception:
+                    candidates = []
+                for checkbox in candidates:
+                    if not checkbox:
+                        continue
+                    try:
+                        identifier = checkbox.get_attribute("id") or checkbox.id
+                    except StaleElementReferenceException:
+                        continue
+                    if identifier in seen_ids:
+                        continue
+
+                    label = _extract_label(root, checkbox)
+                    label_text = ""
+                    if label:
+                        try:
+                            label_text = label.text or ""
+                        except StaleElementReferenceException:
+                            label_text = ""
+                    span_text = []
+                    if label:
+                        try:
+                            for span in label.find_elements(By.XPATH, ".//span"):
+                                try:
+                                    text_value = span.text
+                                except StaleElementReferenceException:
+                                    text_value = ""
+                                if text_value:
+                                    span_text.append(text_value)
+                        except Exception:
+                            pass
+
+                    aria_label = checkbox.get_attribute("aria-label") or ""
+                    aria_labelledby = (checkbox.get_attribute("aria-labelledby") or "").split()
+                    aria_text_parts: list[str] = []
+                    for aria_id in aria_labelledby:
+                        if not aria_id:
+                            continue
+                        try:
+                            aria_node = driver.find_element(By.ID, aria_id)
+                            aria_text_parts.append(aria_node.text)
+                        except NoSuchElementException:
+                            try:
+                                text = driver.execute_script("const el=document.getElementById(arguments[0]); return el ? el.textContent : '';", aria_id)
+                                if text:
+                                    aria_text_parts.append(text)
+                            except Exception:
+                                pass
+
+                    combined_parts = [label_text, *span_text, aria_label, " ".join(aria_text_parts)]
+                    combined = " ".join(part for part in combined_parts if part).strip().lower()
+                    if not combined or not (combined == "follow" or combined.startswith("follow ")):
+                        continue
+
+                    seen_ids.add(identifier)
+                    results.append(checkbox)
+            return results
 
         try:
             follow_checkboxes = WebDriverWait(driver, 5).until(lambda _: _collect_follow_checkboxes() or False)
         except TimeoutException:
             follow_checkboxes = _collect_follow_checkboxes()
 
+        found_any = bool(follow_checkboxes)
+
         for checkbox in follow_checkboxes or []:
             try:
                 driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", checkbox)
             except StaleElementReferenceException:
                 continue
-            try:
-                if checkbox.is_selected() == follow_companies:
-                    continue
-            except StaleElementReferenceException:
-                continue
 
-            label = None
             checkbox_id = checkbox.get_attribute("id")
-            if checkbox_id:
-                label = try_xp(modal, f".//label[@for='{checkbox_id}']", False)
-            if not label:
+            label = _extract_label(modal, checkbox)
+
+            def _state_matches(element: WebElement | None) -> bool:
+                if not element:
+                    return False
                 try:
-                    label = checkbox.find_element(By.XPATH, "ancestor::label[1]")
-                except NoSuchElementException:
-                    label = None
+                    return element.is_selected() == follow_companies
+                except StaleElementReferenceException:
+                    return False
+
+            if _state_matches(checkbox):
+                continue
 
             clicked = False
             if label:
@@ -922,18 +1051,48 @@ return processed;
             if not clicked:
                 try:
                     checkbox.click()
+                    clicked = True
                 except Exception:
-                    driver.execute_script("arguments[0].click();", checkbox)
+                    try:
+                        driver.execute_script("arguments[0].click();", checkbox)
+                        clicked = True
+                    except Exception:
+                        pass
 
-            try:
-                WebDriverWait(driver, 1).until(lambda _, element=checkbox: element.is_selected() == follow_companies)
-            except (TimeoutException, StaleElementReferenceException):
+            if not _state_matches(checkbox):
+                try:
+                    checkbox.send_keys(Keys.SPACE)
+                except Exception:
+                    pass
+
+            if not _state_matches(checkbox):
                 driver.execute_script(
                     "arguments[0].checked = arguments[1];"
+                    "arguments[0].dispatchEvent(new Event('input', {bubbles: true}));"
                     "arguments[0].dispatchEvent(new Event('change', {bubbles: true}));",
                     checkbox,
                     follow_companies,
                 )
+
+            fresh_checkbox = checkbox
+            if checkbox_id:
+                fresh = try_xp(modal, f".//input[@id='{checkbox_id}']", False)
+                if fresh:
+                    fresh_checkbox = fresh
+            if not _state_matches(fresh_checkbox):
+                try:
+                    driver.execute_script(
+                        "arguments[0].checked = arguments[1];"
+                        "arguments[0].dispatchEvent(new Event('input', {bubbles: true}));"
+                        "arguments[0].dispatchEvent(new Event('change', {bubbles: true}));",
+                        fresh_checkbox,
+                        follow_companies,
+                    )
+                except Exception:
+                    pass
+
+        if not processed and not found_any:
+            print_lg("No follow checkbox detected on Easy Apply review screen.")
     except Exception as e:
         print_lg("Failed to update follow companies checkbox!", e)
     
@@ -1183,13 +1342,14 @@ def apply_to_jobs(search_terms: list[str]) -> None:
                                     print_lg("Answered the following questions...", questions_list)
                                     print("\n\n" + "\n".join(str(question) for question in questions_list) + "\n\n")
                                 wait_span_click(driver, "Review", 1, scrollTop=True)
+                                follow_company(modal)
                                 cur_pause_before_submit = pause_before_submit
                                 if errored != "stuck" and cur_pause_before_submit:
                                     decision = pyautogui.confirm('1. Please verify your information.\n2. If you edited something, please return to this final screen.\n3. DO NOT CLICK "Submit Application".\n\n\n\n\nYou can turn off "Pause before submit" setting in config.py\nTo TEMPORARILY disable pausing, click "Disable Pause"', "Confirm your information",["Disable Pause", "Discard Application", "Submit Application"])
                                     if decision == "Discard Application": raise Exception("Job application discarded by user!")
                                     pause_before_submit = False if "Disable Pause" == decision else True
                                     # try_xp(modal, ".//span[normalize-space(.)='Review']")
-                                follow_company(modal)
+                                    follow_company(modal)
                                 if wait_span_click(driver, "Submit application", 2, scrollTop=True): 
                                     date_applied = datetime.now()
                                     if not wait_span_click(driver, "Done", 2): actions.send_keys(Keys.ESCAPE).perform()
