@@ -114,7 +114,7 @@ def _get_int(key: str, fallback: int = 0) -> int:
 # Search criteria
 search_terms = _get_list("search_terms", _DEFAULT_SEARCH_TERMS)
 search_location = _get_str("search_location", "Ireland")
-switch_number = _get_int("switch_number", 5)
+switch_number = _get_int("switch_number", 2)
 randomize_search_order = _get_bool("randomize_search_order", True)
 
 # Job search filters
