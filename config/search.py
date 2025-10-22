@@ -119,7 +119,7 @@ randomize_search_order = _get_bool("randomize_search_order", True)
 
 # Job search filters
 sort_by = _get_str("sort_by", "")
-date_posted = _get_str("date_posted", "Past 24 hours")
+date_posted = _get_str("date_posted", "Past week")
 salary = _get_str("salary", "")
 
 easy_apply_only = _get_bool("easy_apply_only", True)

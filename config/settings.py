@@ -60,7 +60,8 @@ cycle_date_posted = _get_bool("cycle_date_posted", True)
 stop_date_cycle_at_24hr = _get_bool("stop_date_cycle_at_24hr", True)
 
 # Application pacing controls
-application_budget_per_run = _get_int("application_budget_per_run", 20)  # 0 = unlimited
+# 0 = unlimited
+application_budget_per_run = _get_int("application_budget_per_run", 20)
 confirm_after_budget = _get_bool("confirm_after_budget", True)
 stagger_applications = _get_bool("stagger_applications", True)
 stagger_min_delay = _get_int("stagger_min_delay", 10)
